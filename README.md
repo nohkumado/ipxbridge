@@ -1,7 +1,8 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
-
-Created from templates made available by Stagehand under a BSD-style
-[license](https://github.com/dart-lang/stagehand/blob/master/LICENSE).
-
 a try for a little bot handling the incoming stuff of an ipx home automation system
+
+
+run from bin/ipxbot.dart either in android studio or from command line with dart run
+needs commmand line arguments (either edit studio configuration or on cmd line)
+
+like 
+-u mybot -p use_a_good_passwd -r #botsroom:matrix.org -c @myself:matrix.org 
