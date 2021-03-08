@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ipxbot.dart" type="DartCommandLineRunConfigurationType" factoryName="Dart Command Line Application" singleton="false" nameIsGenerated="true">
-    <option name="arguments" value="-u chaletbot -p ur3jHtaCiSUQbfS -r #bboettsroom:matrix.org -c @bboett:matrix.org " />
+    <option name="arguments" value="-u chaletbot -p ur3jHtaCiSUQbfS -r #bboettsroom:matrix.org -c @bboett:matrix.org  -i !OXOtvaYQZByMfTUVsg:matrix.org " />
     <option name="filePath" value="$PROJECT_DIR$/bin/ipxbot.dart" />
     <method v="2" />
   </configuration>

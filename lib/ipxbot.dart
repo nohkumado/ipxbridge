@@ -43,7 +43,7 @@ class IpxMatrixBridge
   {
     api = MatrixApi(homeserver: Uri.parse(server));
   }
-  void joinRoom(String name, {desc = "a Room", topic: "testing", invites: ""})
+  Future<String> createRoom(String name, {desc = "a Room", topic: "testing", invites: ""})
   async {
     api.accessToken = token;
     print("api access token? ${api.accessToken}");
@@ -66,6 +66,22 @@ class IpxMatrixBridge
     rid = await api.createRoom( roomAliasName: name,  name: desc, topic: topic,invite: [invites]);
     //String rid = await api.joinRoomOrAlias( roomAlias);
     print("joined room $rid!");
+    return rid;
+  }
+  Future<bool> joinRoom(String roomid)
+  async {
+    api.accessToken = token;
+    print("api access token? ${api.accessToken}");
+    try {
+      rid = await api.joinRoom(roomid);
+    }
+    catch(e) {
+      print("unkown error joining roominfo : ${e.errcode}= ${e.errorMessage}");
+      return false;
+    }
+    //String rid = await api.joinRoomOrAlias( roomAlias);
+    print("joined room $rid!");
+    return true;
   }
   void sendMsg(String msg)
   async {

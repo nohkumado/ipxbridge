@@ -24,15 +24,23 @@ void main(List<String> arguments)
 }
  void doWork(IpxMatrixBridge  bridge, ArgResults results )
  async {
+   String roomid =(results["roomid"].isNotEmpty)?results["roomid"]:"";
    print("connecting to server ${results["server"]}");
    await bridge.connect(results["server"]);
    print("logging in with  ${results["user"]} and ${results["passwd"]}");
    await bridge.login(user: results["user"], passwd: results["passwd"]);
-   print("trying to join room= ${results["room"]} and inviting ${results["invite"]}");
-   await bridge.joinRoom(results["room"], invites: results["invite"]);
-   //print("login = ${log} ");
-   print("trying to send  ${results["msg"]}!");
-   await bridge.sendMsg(results["msg"]);
+   if(roomid.isEmpty) {
+     print(
+         "trying to crearte room= ${results["room"]} and inviting ${results["invite"]}");
+     roomid = await bridge.createRoom(results["room"], invites: results["invite"]);
+   }
+
+   if(await bridge.joinRoom(roomid))
+     {
+       //print("login = ${log} ");
+       print("trying to send  ${results["msg"]}!");
+       await bridge.sendMsg(results["msg"]);
+     }
  }
 
  String capas(IpxMatrixBridge  bridge)
