@@ -1,6 +1,5 @@
 import 'package:args/args.dart';
-import 'package:ipxbot/ipxbot.dart' as ipxbot;
-import 'package:ipxbot/ipxbot.dart';
+import '../lib/ipxbot.dart';
 
 void main(List<String> arguments)
 {
@@ -14,7 +13,7 @@ void main(List<String> arguments)
   parser.addOption('msg', abbr: 'm', defaultsTo: 'Hello!');
   var results = parser.parse(arguments);
 
-  var  bridge = ipxbot.IpxMatrixBridge();
+  var  bridge = IpxMatrixBridge();
   //IpxBot bot = new IpxBot(results);
   print('Start of prog!');
   doWork(bridge, results);
@@ -25,25 +24,21 @@ void main(List<String> arguments)
  async {
    String roomid =(results['roomid'].isNotEmpty)?results['roomid']:'';
    print("connecting to server ${results["server"]}");
-   await bridge.connect(results['server']);
+   //await 
+       bridge.connect(results['server'],user: results['user'], passwd: results['passwd'],roomid: roomid);
    print("logging in with  ${results["user"]} and ${results["passwd"]}");
-   await bridge.login(user: results['user'], passwd: results['passwd']);
-   if(roomid.isEmpty) {
-     print(
-         "trying to create room= ${results["room"]} and inviting ${results["invite"]}");
-     roomid = await bridge.createRoom(results['room'], invites: results['invite']);
-   }
+   //await bridge.login(user: results['user'], passwd: results['passwd']);
+   // if(roomid.isEmpty) {
+   //   print(
+   //       "trying to create room= ${results["room"]} and inviting ${results["invite"]}");
+   //   roomid = await bridge.createRoom(results['room'], invites: results['invite']);
+   // }
 
-   if(await bridge.joinRoom(roomid))
-     {
-       //print("login = ${log} ");
-       print("trying to send  ${results["msg"]}!");
-       await bridge.sendMsg(results['msg']);
-     }
+   // if(await bridge.joinRoom(roomid))
+   //   {
+   //     //print("login = ${log} ");
+   //     print("trying to send  ${results["msg"]}!");
+   //     await bridge.sendMsg(results['msg']);
+   //   }
  }
 
- String capas(IpxMatrixBridge  bridge)
- {
-   var data = bridge.capabilitites();
-   return data;
- }
