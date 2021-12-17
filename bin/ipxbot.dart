@@ -25,7 +25,7 @@ void main(List<String> arguments)
  async {
    String roomid =(results['roomid'].isNotEmpty)?results['roomid']:'';
    print("connecting to server ${results["server"]}");
-   await bridge.connect(results['server']);
+   bridge.connect(results['server']);
    print("logging in with  ${results["user"]} and ${results["passwd"]}");
    await bridge.login(user: results['user'], passwd: results['passwd']);
    if(roomid.isEmpty) {
@@ -38,7 +38,7 @@ void main(List<String> arguments)
      {
        //print("login = ${log} ");
        print("trying to send  ${results["msg"]}!");
-       await bridge.sendMsg(results['msg']);
+       bridge.sendMsg(results['msg']);
      }
  }
 
