@@ -1,94 +1,161 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:matrix/matrix.dart';
 
 
 class IpxMatrixBridge
 {
-  String token ="";
+  String token ='';
+// in: 1 sonnette dojo, 3 capteur eua pluie, 5 sonnette privee
+  //out:  4 staubsauger, 5 sonnette privee, 6 überlauf regen, 7 garage
+  //trigger garage: ex. Set071p
+  //GetIn7
+  //retrieve state http://domus.lan/api/xdevices.json?cmd=10
+  //Pilotage d'un Relais en M2M<br>
+  //Sortie 5 : <a href=http://192.168.0.9/M2M/M2M.php?commande=Set050>off</a>
+  //&nbsp;<a href=http://192.168.0.9/M2M/M2M.php?commande=Set051>on</a>
 
-  String userid ="";
+
+
+  String userid ='';
+  String username ='';
   int txnId = 1;
-  String rid ="";
+  String rid ='';
   late Client client;
+  Room? myRoom ;
+  List<String> allowedusers = ['@bboett:matrix.org', '@bboett:nohkumado.eu','@sophie_boettcher:matrix.org','@nathan_boettcher:matrix.org', '@boettcher_manuela:matrix.org','@arthur_boettcher:matrix.org', '@wibo:matrix.org'];
+  int m2mport = 9870;
+  String m2mhost = 'tcp://domus.lan/';
+
+  final DateTime activationDate = DateTime.now() ;
 
 
-  void connect(String server,{String user : 'toto', String passwd:'12345',String roomid:''})
+  Future<void>
+  connect(String server,{String user = 'toto', String passwd ='12345',String roomid =''})
+  async
   {
-    client = Client("IpxBot");
-    client.onLoginStateChanged.stream
-	.listen((bool loginState)
-	    { 
-        print("LoginState: ${loginState.toString()}");
+    print("entering connect");
+    username = user;
+    client = Client('IpxBot');
+    client.onLoginStateChanged.stream.listen((event) {print('LoginState: $event'); });
+
+    client.onEvent.stream.listen((EventUpdate r_event){
+      //print("incoming event of type: '${r_event.type}' ${r_event.type.runtimeType}");
+      if(r_event.type == EventUpdateType.timeline && r_event.content['type'] == "m.room.message") processMsg(r_event.content);
+      //else print('New event update! t:${r_event.type} c:${r_event.content}');
+    });
+    client.onRoomState.stream.listen((Event eventUpdate)
+    {
+      //print("Room state change: ${eventUpdate.type} ${eventUpdate.content}");
     });
 
-    client.onEvent.stream.listen((EventUpdate eventUpdate){ 
-        print("New event update!");
-    });
+    //client.onRoomUpdate.stream.listen((RoomUpdate eventUpdate){
+    //    print("New room update!");
+    //});
+    //client.checkHomeserver(Uri.parse(server)).then(
+    //        (value) => client.login(
+    //      LoginType.mLoginPassword,
+    //      identifier: AuthenticationUserIdentifier(user: user),
+    //      password: passwd,
+    //    ).then((value) {
+    //      myRoom = client.getRoomById(roomid);
+    //      //if(myRoom != null) await myRoom!.sendTextEvent('Hello world');
+    //      post2Room('Hello world');
+    //    }
 
-    client.onRoomUpdate.stream.listen((RoomUpdate eventUpdate){ 
-        print("New room update!");
-    });
+    //    ));
+    //Start http server
+    var http_server = await HttpServer.bind(InternetAddress.anyIPv4, 8123);
 
-    client.checkHomeserver(Uri.parse(server)).then(()=> client.login(
-	  identifier: AuthenticationUserIdentifier(user: user),
-	    password: passwd,
-    ).then(()=> client.getRoomById('your_room_id').sendTextEvent('Hello world'))
-	);
-    ;
-    ;
+    print('Listening on ${http_server.address}:${http_server.port}');
 
+    // Listen for incoming requests
+    await for (var request in http_server)
+    {
+      // Handle each request
+      handleRequest(request);
+    }
   }
-//   Future<String> createRoom(String name, {desc = "a Room", topic: "testing", invites: ""})
-//   async {
-//     api.accessToken = token;
-//     print("api access token? ${api.accessToken}");
-//     /*
-//       Future<String> createRoom({
-//         Visibility visibility,
-//         String roomAliasName,
-//         String name,
-//         String topic,
-//         List<String> invite,
-//         List<Map<String, dynamic>> invite3pid,
-//         String roomVersion,
-//         Map<String, dynamic> creationContent,
-//         List<Map<String, dynamic>> initialState,
-//         CreateRoomPreset preset,
-//         bool isDirect,
-//         Map<String, dynamic> powerLevelContentOverride,
-//       }) async {
-//       */
-//     rid = await api.createRoom( roomAliasName: name,  name: desc, topic: topic,invite: [invites]);
-//     //String rid = await api.joinRoomOrAlias( roomAlias);
-//     print("joined room $rid!");
-//     return rid;
-//   }
-//   Future<bool> joinRoom(String roomid)
-//   async {
-//     api.accessToken = token;
-//     print("api access token? ${api.accessToken}");
-//     try {
-//       rid = await api.joinRoom(roomid);
-//     }
-//     catch(e) {
-//       print("unkown error joining roominfo : ${e.errcode}= ${e.errorMessage}");
-//       return false;
-//     }
-//     //String rid = await api.joinRoomOrAlias( roomAlias);
-//     print("joined room $rid!");
-//     return true;
-//   }
-//   void sendMsg(String msg)
-//   async {
-//     Map<String,dynamic> content = {
-//       "msgtype": "m.text",
-//       "body": msg
-//     };
-//
-//     if(rid != null) {
-//       String eventid = await api.sendMessage(
-//           rid, "m.room.message", "$txnId", content);
-//       print("send message $eventid!");
-//     }
-//     else print("not connected.... can't send msg");
-//   }
+
+  Future<void> post2Room(String s) async {
+    if(myRoom != null) await myRoom!.sendTextEvent(s);
+  }
+
+  void processMsg(Map<String, dynamic> content)
+  {
+    String sender = content['sender'];
+    String message = content['content']['body'];
+    print("debug: ${content['unsigned']}");
+    //int tmstamp = content['unsigned']?['age']??0;
+    int tmstamp = content['origin_server_ts']??0;
+    DateTime msgDate = DateTime.fromMillisecondsSinceEpoch(tmstamp);
+    if(msgDate.isBefore(activationDate)) return; //forget old messages
+    print('Need to process msg: ${content}');
+    if(allowedusers.contains(sender))
+    {
+      print("##### processing $message");
+      switch(message)
+      {
+        case 'hello': post2Room("hello ${sender}"); break;
+        case 'garage': post2Room("Hai ${sender}! öffne Garagentor!"); break;
+        case 'aspi': post2Room("Hai ${sender}! starte Staubsauger!"); break;
+        default: print('Need to process msg: ${message} from ${sender}');
+      }
+    }
+    else if(sender.startsWith("@$username:") ){}//ignore it
+    else print("[$username]ignoring user ${sender} with message ${message}");
+  }
+
+  Future<void> handleRequest(HttpRequest request) async {
+    print("got a request for ${request.requestedUri}");
+
+    if (request.method == 'GET') {
+      // Handle GET request
+      Map<String,String> args = request.uri.queryParameters;
+      if (args.isNotEmpty) {
+        // Assuming the notification data is passed as query parameters
+        print('Received push notification: $args');
+        if(args["id"] == 'domus') {
+
+    }  else
+        if(args["id"] == 'hataraite') {
+
+        } // Here you can process the received notification
+        // and perform actions based on it for your domotic needs
+      }
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..write('Notification received')
+        ..close();
+    }
+    else if (request.method == 'POST') {
+      // Handle POST request
+      //var content = request.transform(Utf8Decoder()).join() ;
+      //var queryParams = Uri(query: content).queryParameters;
+     String reply = await utf8.decoder.bind(request).join();
+
+
+
+      print('Received push notification: $reply');
+
+     // request.transform(Utf8Decoder()).listen((body) {
+     //   // Handle the body of the request
+     //   print('Received push notification: $body');
+
+     //   // Here you can process the received notification
+     //   // and perform actions based on it for your domotic needs
+     // });
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..write('Notification received')
+        ..close();
+    } else {
+      // Handle other HTTP methods
+      request.response
+        ..statusCode = HttpStatus.methodNotAllowed
+        ..write('Unsupported request method')
+        ..close();
+    }
+}
 }
