@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:matrix/matrix.dart';
 
+import 'ipx.dart';
+
 
 class IpxMatrixBridge
 {
@@ -29,6 +31,20 @@ class IpxMatrixBridge
   String m2mhost = 'tcp://domus.lan/';
 
   final DateTime activationDate = DateTime.now() ;
+
+  Map<String,Ipx> ipxes = {
+    'domus' : Ipx('domus', port: 9870, host: 'domus.lan')
+      ..input(n:1,name:'sonnette dojo')
+      ..input(n:3,name:'reservoir trop plein')
+      ..input(n:5,name:'sonnette privee')
+      ..output(n:1,name:'sonnette dojo')
+      ..output(n:3,name:'gache porte')
+      ..output(n:4,name:'aspirateur')
+      ..output(n:5,name:'actionneur sonnette privee')
+      ..output(n:6,name:'vidange réservoir ')
+      ..output(n:7,name:'porte garage')
+    ,
+  };
 
 
   Future<void>
@@ -80,6 +96,7 @@ class IpxMatrixBridge
 
   Future<void> post2Room(String s) async {
     if(myRoom != null) await myRoom!.sendTextEvent(s);
+    else print("No room :( : $s");
   }
 
   void processMsg(Map<String, dynamic> content)
@@ -108,22 +125,23 @@ class IpxMatrixBridge
   }
 
   Future<void> handleRequest(HttpRequest request) async {
-    print("got a request for ${request.requestedUri}");
+   // print("got a request for ${request.requestedUri}");
 
     if (request.method == 'GET') {
       // Handle GET request
       Map<String,String> args = request.uri.queryParameters;
-      if (args.isNotEmpty) {
+      if (args.isNotEmpty)
+      {
         // Assuming the notification data is passed as query parameters
-        print('Received push notification: $args');
-        if(args["id"] == 'domus') {
-
-    }  else
-        if(args["id"] == 'hataraite') {
-
-        } // Here you can process the received notification
-        // and perform actions based on it for your domotic needs
-      }
+        //print('Received[GET] push notification: $args');
+        if(ipxes.containsKey(args["id"])) {
+          Ipx actIpx = ipxes[args["id"]]!;
+          List<String> changes = actIpx.statusChange(args);
+          post2Room("Status changes received: $changes");
+        }  else
+          print("ehm... unknown ipx: '${args['id']}'");
+      }else
+        print("oy... args is empty??? '$args'");
       request.response
         ..statusCode = HttpStatus.ok
         ..write('Notification received')
@@ -137,7 +155,7 @@ class IpxMatrixBridge
 
 
 
-      print('Received push notification: $reply');
+      print('Received[POST] push notification: $reply');
 
      // request.transform(Utf8Decoder()).listen((body) {
      //   // Handle the body of the request
