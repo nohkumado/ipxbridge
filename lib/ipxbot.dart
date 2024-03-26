@@ -32,6 +32,7 @@ class IpxMatrixBridge
 
   final DateTime activationDate = DateTime.now() ;
 
+  //to be later exported to a json encoed file.... TODO!
   Map<String,Ipx> ipxes = {
     'domus' : Ipx('domus', port: 9870, host: 'domus.lan')
       ..input(n:1,name:'sonnette dojo')
@@ -115,7 +116,9 @@ class IpxMatrixBridge
       switch(message)
       {
         case 'hello': post2Room("hello ${sender}"); break;
-        case 'garage': post2Room("Hai ${sender}! öffne Garagentor!"); break;
+        case 'garage':
+          toggleGarage(sender: sender);
+          break;
         case 'aspi': post2Room("Hai ${sender}! starte Staubsauger!"); break;
         default: print('Need to process msg: ${message} from ${sender}');
       }
@@ -175,5 +178,19 @@ class IpxMatrixBridge
         ..write('Unsupported request method')
         ..close();
     }
+}
+
+  void toggleGarage({required String sender})
+  {
+  post2Room("Hai ${sender}! öffne Garagentor!");
+  Ipx actIps = ipxes["domus"]!;
+  Uri url=Uri(scheme: 'http', host: actIps.host, path: 'protect/assignio/assign1.htm');
+
+  url.queryParameters('output', actIps.find('porte garage'));
+  //keep for further reference API info:
+  //url.queryParameters('relayname', 'porte garage');
+  url.queryParameters('delayon', 0);
+  url.queryParameters('delayoff', 5);
+
 }
 }

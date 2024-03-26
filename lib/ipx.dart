@@ -1,10 +1,13 @@
-import 'dart:ffi';
-
+import 'package:tuple/tuple.dart';
+/// description of an Ipx, the home automation system
+/// notable the names of the different inputs and outputs, counters and analogs
+/// holds also the state to record the changes,
+/// also host and port to find it on the network
 class Ipx
 {
-  String name;
-  int port;
-  String host;
+  String name; //short name of this ipx
+  int port; //the m2m port of this ipx, to see later if we use it at all
+  String host; //the hostname of this ipx
 
   Map<String,List<String>> names =
   {
@@ -109,5 +112,19 @@ class Ipx
       }
     }
     return changed;
+  }
+
+  Tuple2<String, int>  find(String s)
+  {
+    for(String key in states.keys)
+      {
+        int indexof = names[key]!.indexOf(s);
+        if(indexof >= 0)
+          {
+            return Tuple2<String,int>(key,indexof);
+          }
+
+      }
+    return Tuple2<String,int>("unkown",-1);
   }
 }
