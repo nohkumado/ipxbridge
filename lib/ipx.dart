@@ -1,3 +1,4 @@
+import 'package:ipxbot/ipxentity.dart';
 import 'package:tuple/tuple.dart';
 /// description of an Ipx, the home automation system
 /// notable the names of the different inputs and outputs, counters and analogs
@@ -9,23 +10,14 @@ class Ipx
   int port; //the m2m port of this ipx, to see later if we use it at all
   String host; //the hostname of this ipx
 
-  Map<String,List<String>> names =
+  Map<String,List<IpxEntity>> entities =
   {
-    "input" : List<String>.generate(32, (index) => '${(index+1)}'),
-    "output" : List<String>.generate(32, (index) => '${(index+1)}'),
-    "analog" : List<String>.generate(16, (index) => '${(index+1)}'),
-    "counter" : List<String>.generate(8, (index) => '${(index+1)}'),
+    "input" : List<IpxInput>.generate(32, (index) => IpxInput(name: '${(index+1)}', n: index)),
+    "output" : List<IpxOutput>.generate(32, (index) => IpxOutput(name: '${(index+1)}', n: index)),
+    "analog" : List<IpxAnalog>.generate(16, (index) => IpxAnalog(name: '${(index+1)}', n: index)),
+    "counter" : List<IpxCounter>.generate(8, (index) => IpxCounter(name: '${(index+1)}', n: index)),
   };
-  Map<String,List<bool>> states =
-  {
-    "input" : List.filled(32, false),
-    "output" :  List.filled(32, false),
-  };
-  Map<String,List<num>> numStates =
-  {
-    "analog" : List.filled(32, 0.0),
-    "counter" :  List.filled(32, 0),
-  };
+
 
   bool debug = true;
 
@@ -33,31 +25,13 @@ class Ipx
 
   Ipx(this.name, {this.port = 9870, this.host = 'ipx.lan'});
   // Method to update input name
-  Ipx input({required int n, required String name})
+  Ipx define(IpxEntity entity)
   {
-    if(n>0) n=n-1;
-    names["input"]![n] = name;
-    return this;
-  }
-  // Method to update output name
-  Ipx output({required int n, required String name})
-  {
-    if(n>0) n=n-1;
-    names["output"]![n] = name;
-    return this;
-  }
-  // Method to update analog name
-  Ipx analog({required int n, required String name})
-  {
-    if(n>0) n=n-1;
-    names["analog"]![n] = name;
-    return this;
-  }
-   // Method to update counter name
-  Ipx counter({required int n, required String name})
-  {
-    if(n>0) n=n-1;
-    names["counter"]![n] = name;
+    if(entity is IpxInput) entities["input"]![entity.n] = entity;
+    else if(entity is IpxOutput) entities["output"]![entity.n] = entity;
+    else if(entity is IpxAnalog) entities["analog"]![entity.n] = entity;
+    else if(entity is IpxCounter) entities["counter"]![entity.n] = entity;
+    else print("Error, unknown entity : $entity");
     return this;
   }
 
@@ -94,37 +68,41 @@ class Ipx
       values.last = values.last.replaceAll(':', '');
     }
     for (int i = 0; i < values.length; i++) {
-      String counterValue = values[i];
-      num previousValue = numStates[key]![i];
-      numStates[key]![i] = int.parse(counterValue);
-      if(numStates[key]![i] != previousValue)changed.add("$key:${names[key]![i]}: ${numStates[key]![i]}");
+      IpxEntity  entity = entities[key]![i];
+      if(entity.update(values[i])) {changed.add(entity.name);}
     }
   }
 
   List<String> _updateState({required String key,required String data, required List<String> changed})
   {
     for (int n = 0; n < data.length; n++) {
-      bool previous = states[key]![n];
-      states[key]![n] = data[n] == '1';
-      if (previous != states[key]![n]) {
-        if(debug) print("status change for $key:${names[key]![n]}: ${states[key]![n]}");
-        changed.add(names[key]![n]);
-      }
+      if(entities[key]![n].update(data[n])) {changed.add(entities[key]![n].name);}
     }
     return changed;
   }
 
   Tuple2<String, int>  find(String s)
   {
-    for(String key in states.keys)
+    for(String key in entities.keys)
       {
-        int indexof = names[key]!.indexOf(s);
-        if(indexof >= 0)
+        int indexof = 0;
+        while(indexof < entities[key]!.length)
           {
-            return Tuple2<String,int>(key,indexof);
+            if(entities[key]![indexof].name == s) return Tuple2<String,int>(key,indexof);
+            indexof++;
           }
-
       }
-    return Tuple2<String,int>("unkown",-1);
+    return Tuple2<String,int>("unknown",-1);
+  }
+
+  bool getState(String item1, int item2)
+  {
+    if(entities.containsKey(item1) && entities[item1]!.length > item2) {
+      dynamic val = entities[item1]?[item2].value;
+      if (val is bool) return val;
+      print("wrong type of entity, no bool: $item1 : $item2 ${entities[item1]?[item2]}");
+    }
+    print("no suche element $item1 : $item2");
+    return false;
   }
 }

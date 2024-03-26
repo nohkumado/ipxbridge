@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:matrix/matrix.dart';
+import 'package:tuple/tuple.dart';
 
 import 'ipx.dart';
+import 'package:http/http.dart' as http;
 
+import 'ipxentity.dart';
 
 class IpxMatrixBridge
 {
@@ -32,18 +35,18 @@ class IpxMatrixBridge
 
   final DateTime activationDate = DateTime.now() ;
 
-  //to be later exported to a json encoed file.... TODO!
+  //to be later exported to a json encoded file.... TODO!
   Map<String,Ipx> ipxes = {
     'domus' : Ipx('domus', port: 9870, host: 'domus.lan')
-      ..input(n:1,name:'sonnette dojo')
-      ..input(n:3,name:'reservoir trop plein')
-      ..input(n:5,name:'sonnette privee')
-      ..output(n:1,name:'sonnette dojo')
-      ..output(n:3,name:'gache porte')
-      ..output(n:4,name:'aspirateur')
-      ..output(n:5,name:'actionneur sonnette privee')
-      ..output(n:6,name:'vidange réservoir ')
-      ..output(n:7,name:'porte garage')
+      ..define(IpxInput(n:0,name:'sonnette dojo'))
+      ..define(IpxInput(n:2,name:'reservoir trop plein'))
+      ..define(IpxInput(n:4,name:'sonnette privee'))
+      ..define(IpxOutput(n:0,name:'sonnette dojo'))
+      ..define(IpxOutput(n:2,name:'gache porte'))
+      ..define(IpxOutput(n:3,name:'aspirateur'))
+      ..define(IpxOutput(n:4,name:'actionneur sonnette privee'))
+      ..define(IpxOutput(n:5,name:'vidange réservoir '))
+      ..define(IpxOutput(n:6,name:'porte garage', type: switchtypes.button))
     ,
   };
 
@@ -87,6 +90,8 @@ class IpxMatrixBridge
 
     print('Listening on ${http_server.address}:${http_server.port}');
 
+    //Debug test remove before prod
+    triggerOutput(sender: 'me', schalter:8.toString());
     // Listen for incoming requests
     await for (var request in http_server)
     {
@@ -117,9 +122,12 @@ class IpxMatrixBridge
       {
         case 'hello': post2Room("hello ${sender}"); break;
         case 'garage':
-          toggleGarage(sender: sender);
+          triggerOutput(sender: sender, schalter: 'porte garage');
           break;
-        case 'aspi': post2Room("Hai ${sender}! starte Staubsauger!"); break;
+        case 'aspi':
+          post2Room("Hai ${sender}! starte Staubsauger!");
+          toggleOutput(sender: sender, schalter:'aspirateur');
+          break;
         default: print('Need to process msg: ${message} from ${sender}');
       }
     }
@@ -128,7 +136,7 @@ class IpxMatrixBridge
   }
 
   Future<void> handleRequest(HttpRequest request) async {
-   // print("got a request for ${request.requestedUri}");
+    // print("got a request for ${request.requestedUri}");
 
     if (request.method == 'GET') {
       // Handle GET request
@@ -154,19 +162,19 @@ class IpxMatrixBridge
       // Handle POST request
       //var content = request.transform(Utf8Decoder()).join() ;
       //var queryParams = Uri(query: content).queryParameters;
-     String reply = await utf8.decoder.bind(request).join();
+      String reply = await utf8.decoder.bind(request).join();
 
 
 
       print('Received[POST] push notification: $reply');
 
-     // request.transform(Utf8Decoder()).listen((body) {
-     //   // Handle the body of the request
-     //   print('Received push notification: $body');
+      // request.transform(Utf8Decoder()).listen((body) {
+      //   // Handle the body of the request
+      //   print('Received push notification: $body');
 
-     //   // Here you can process the received notification
-     //   // and perform actions based on it for your domotic needs
-     // });
+      //   // Here you can process the received notification
+      //   // and perform actions based on it for your domotic needs
+      // });
       request.response
         ..statusCode = HttpStatus.ok
         ..write('Notification received')
@@ -178,19 +186,66 @@ class IpxMatrixBridge
         ..write('Unsupported request method')
         ..close();
     }
-}
+  }
+  /// toogle the switch of any output
+  Future<void> triggerOutput({required String sender, required String schalter})
+  async {
+    // Craft the message for the room
+    post2Room("Hai ${sender}! betätige Schalter $schalter!");
+    final Ipx actIps = ipxes["domus"]!;
+    Uri url=Uri(scheme: 'http', host: actIps.host, path: 'leds.cgi');
+    Tuple2<String,int> pG = actIps.find(schalter);
+    if(pG.item2 >=0) {
+      // Create a mutable copy of the query parameters map
+      Map<String, String> queryParameters = Map.from(url.queryParameters);
+      queryParameters['led'] = pG.item2.toString();
 
-  void toggleGarage({required String sender})
-  {
-  post2Room("Hai ${sender}! öffne Garagentor!");
-  Ipx actIps = ipxes["domus"]!;
-  Uri url=Uri(scheme: 'http', host: actIps.host, path: 'protect/assignio/assign1.htm');
+      // Assign the modified query parameters back to the url
+      url = url.replace(queryParameters: queryParameters);
 
-  url.queryParameters('output', actIps.find('porte garage'));
-  //keep for further reference API info:
-  //url.queryParameters('relayname', 'porte garage');
-  url.queryParameters('delayon', 0);
-  url.queryParameters('delayoff', 5);
+      //url.queryParameters['led'] = pG.item2.toString();
+      // Send the URI request using an appropriate HTTP client library
+      final response = await http.get(url); // Use http.get for GET requests
 
-}
+      if (response.statusCode == 200) {
+        post2Room("$schalter toggle request sent successfully."); // Indicate success
+      } else {
+        post2Room("Error sending $schalter request: ${response.statusCode}");
+      }
+    }
+    else print("no such entry: '$schalter'");
+
+  }
+  /// open our garage
+  /// 'aspirateur'
+  Future<void> toggleOutput({required String sender, required String schalter})
+  async {
+    // Craft the message for the room
+    post2Room("Hai ${sender}! schalte $schalter!");
+    Ipx actIps = ipxes["domus"]!;
+    //that ons is to set the type of switch
+    //final Uri url=Uri(scheme: 'http', host: actIps.host, path: 'protect/assignio/assign1.htm');
+    final Uri url=Uri(scheme: 'http', host: actIps.host, path: 'preset.htm');
+    Tuple2<String,int> pG = actIps.find('aspirateur');
+    if(pG.item2 >=0) {
+
+      url.queryParameters['set${(pG.item2+1)}'] = (!actIps.getState(pG.item1,pG.item2)).toString();
+      //keep for further reference API info:
+      //url.queryParameters('relayname', 'porte garage');
+      // Set delay parameters (assuming these are supported by the API)
+      //url.queryParameters['delayon'] = 0.toString();
+      //url.queryParameters['delayoff'] = 5.toString();
+      // Send the URI request using an appropriate HTTP client library
+      // (assuming post2Room doesn't handle this functionality)
+      final response = await http.get(url); // Use http.get for GET requests
+
+      if (response.statusCode == 200) {
+        post2Room("Garage door toggle request sent successfully."); // Indicate success
+      } else {
+        post2Room("Error sending garage door toggle request: ${response.statusCode}");
+      }
+    }
+    else post2Room("no such entry: 'porte garage'");
+
+  }
 }
