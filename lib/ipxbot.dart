@@ -23,32 +23,33 @@ class IpxMatrixBridge
 
 
 
-  String userid ='';
-  String username ='';
-  int txnId = 1;
-  String rid ='';
+  String userid;
+  String username;
+  int txnId;
+  String rid;
   late Client client;
   Room? myRoom ;
-  List<String> allowedusers = ['@bboett:matrix.org', '@bboett:nohkumado.eu','@sophie_boettcher:matrix.org','@nathan_boettcher:matrix.org', '@boettcher_manuela:matrix.org','@arthur_boettcher:matrix.org', '@wibo:matrix.org'];
-  int m2mport = 9870;
-  String m2mhost = 'tcp://domus.lan/';
+  List<String> allowedusers;
+  int m2mport;
+  String m2mhost;
 
   final DateTime activationDate = DateTime.now() ;
 
-  //to be later exported to a json encoded file.... TODO!
-  Map<String,Ipx> ipxes = {
-    'domus' : Ipx('domus', port: 9870, host: 'domus.lan')
+  IpxMap ipxes = IpxMap();
+
+  IpxMatrixBridge({this.userid = "", this.username = "", this.txnId = 1, this.rid = '', this.allowedusers = const ['@bboett:matrix.org', '@bboett:nohkumado.eu','@sophie_boettcher:matrix.org','@nathan_boettcher:matrix.org', '@boettcher_manuela:matrix.org','@arthur_boettcher:matrix.org', '@wibo:matrix.org'], this.m2mport = 9870, this.m2mhost= 'tcp://domus.lan/'} ) {
+    //to be later exported to a json encoded file.... TODO!
+    ipxes['domus'] =Ipx('domus', port: 9870, host: 'domus.lan')
       ..define(IpxInput(n:0,name:'sonnette dojo'))
       ..define(IpxInput(n:2,name:'reservoir trop plein'))
       ..define(IpxInput(n:4,name:'sonnette privee'))
       ..define(IpxOutput(n:0,name:'sonnette dojo'))
       ..define(IpxOutput(n:2,name:'gache porte'))
-      ..define(IpxOutput(n:3,name:'aspirateur'))
+      ..define(IpxOutput(n:3,name:'aspirateur', cmd: 'aspi'))
       ..define(IpxOutput(n:4,name:'actionneur sonnette privee'))
-      ..define(IpxOutput(n:5,name:'vidange réservoir '))
-      ..define(IpxOutput(n:6,name:'porte garage', type: switchtypes.button))
-    ,
-  };
+      ..define(IpxOutput(n:5,name:'vidange reservoir', cmd: 'vidange'))
+      ..define(IpxOutput(n:6,name:'porte garage', type: switchtypes.button, cmd: 'garage'));
+  }
 
 
   Future<void>
@@ -117,10 +118,13 @@ class IpxMatrixBridge
     print('Need to process msg: ${content}');
     if(allowedusers.contains(sender))
     {
-      print("##### processing $message");
+      //print("##### processing $message");
+      IpxEntity? entity = ipxes.find(message);
       switch(message)
       {
         case 'hello': post2Room("hello ${sender}"); break;
+        case '?':
+        case 'help': post2Room("help: ${compileIpxCmds()}}"); break;
         case 'garage':
           triggerOutput(sender: sender, schalter: 'porte garage');
           break;
@@ -146,7 +150,7 @@ class IpxMatrixBridge
         // Assuming the notification data is passed as query parameters
         //print('Received[GET] push notification: $args');
         if(ipxes.containsKey(args["id"])) {
-          Ipx actIpx = ipxes[args["id"]]!;
+          Ipx actIpx = ipxes[args["id"]!]!;
           List<String> changes = actIpx.statusChange(args);
           post2Room("Status changes received: $changes");
         }  else
@@ -187,7 +191,7 @@ class IpxMatrixBridge
         ..close();
     }
   }
-  /// toogle the switch of any output
+  /// toggle the switch of any output
   Future<void> triggerOutput({required String sender, required String schalter})
   async {
     // Craft the message for the room
@@ -246,6 +250,17 @@ class IpxMatrixBridge
       }
     }
     else post2Room("no such entry: 'porte garage'");
+
+  }
+
+  String compileIpxCmds()
+  {
+    StringBuffer res = StringBuffer();
+    for(String key in ipxes.keys)
+      {
+        res.write('${ipxes[key]!.compileHelp()}');
+      }
+    return res.toString();
 
   }
 }

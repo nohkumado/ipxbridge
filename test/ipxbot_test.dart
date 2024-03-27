@@ -122,6 +122,52 @@ void main() {
         // Check that the find method returns the correct key and index for an unknown entity
         expect(ipx.find('Unknown Entity'), Tuple2<String, int>('unknown', -1));
       });
+      group('IpxMap', () {
+        test('should add and retrieve values correctly', () {
+          final ipxMap = IpxMap();
+          final ipx1 = Ipx("one");
+          final ipx2 = Ipx("two");
+
+          // Add values to the map
+          ipxMap['key1'] = ipx1;
+          ipxMap['key2'] = ipx2;
+
+          // Check if keys exist
+          expect(ipxMap.containsKey('key1'), isTrue);
+          expect(ipxMap.containsKey('key2'), isTrue);
+
+          // Retrieve values and compare
+          expect(ipxMap['key1'], equals(ipx1));
+          expect(ipxMap['key2'], equals(ipx2));
+        });
+
+        test('should return null when key not found', () {
+          final ipxMap = IpxMap();
+
+          // Retrieving a value for a key that doesn't exist should return null
+          expect(ipxMap['nonexistent_key'], isNull);
+        });
+
+        test('should find entities correctly', () {
+          final ipxMap = IpxMap();
+          final ipx1 = Ipx("one");
+          final ipx2 = Ipx("two");
+          final message1 = 'message1';
+          final message2 = 'message2';
+
+          // Add entities to Ipx objects
+          ipx1.define(IpxInput(name: 'Test Input', n: 0));
+          ipx2.define(IpxOutput(name: 'Test Output', n: 1));
+
+          // Add Ipx objects to the map
+          ipxMap['key1'] = ipx1;
+          ipxMap['key2'] = ipx2;
+
+          // Find entities by message
+          expect(ipxMap.find(message1), equals(ipx1.getEntity(message1)));
+          expect(ipxMap.find(message2), equals(ipx2.getEntity(message2)));
+        });
+      });
 
     });
 }

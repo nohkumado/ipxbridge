@@ -1,4 +1,4 @@
-import 'package:ipxbot/ipxentity.dart';
+import 'ipxentity.dart';
 import 'package:tuple/tuple.dart';
 /// description of an Ipx, the home automation system
 /// notable the names of the different inputs and outputs, counters and analogs
@@ -9,6 +9,7 @@ class Ipx
   String name; //short name of this ipx
   int port; //the m2m port of this ipx, to see later if we use it at all
   String host; //the hostname of this ipx
+  Map<String,IpxEntity> cmds = {};
 
   Map<String,List<IpxEntity>> entities =
   {
@@ -32,6 +33,7 @@ class Ipx
     else if(entity is IpxAnalog) entities["analog"]![entity.n] = entity;
     else if(entity is IpxCounter) entities["counter"]![entity.n] = entity;
     else print("Error, unknown entity : $entity");
+    if(entity.cmd.isNotEmpty) cmds[entity.cmd] = entity;
     return this;
   }
 
@@ -57,7 +59,6 @@ class Ipx
     data = args["analog"]??"";
     _updateNumericState(key: 'analog',data : data, changed:changed);
 
-    if(debug)print("Returning changed: $changed");
     return changed;
   }
 
@@ -104,5 +105,77 @@ class Ipx
     }
     print("no suche element $item1 : $item2");
     return false;
+  }
+
+  String compileHelp()
+  {
+    StringBuffer res = StringBuffer();
+    for(String key in cmds.keys)
+      {
+        res.write("${cmds[key]!.name} : ${cmds[key]!.help}\n");
+      }
+    return res.toString();
+  }
+
+  IpxEntity? getEntity(String message)
+  {
+    if(cmds.containsKey(message)) return cmds[message];
+    return null;
+  }
+
+  IpxEntity? findEntity(String cmd)
+  {
+    for(String key in entities.keys)
+    {
+      int indexof = 0;
+      while(indexof < entities[key]!.length)
+      {
+        if(entities[key]![indexof].name == cmd) return entities[key]![indexof];
+        indexof++;
+      }
+    }
+    return null;
+  }
+}
+
+class IpxMap
+{
+  // Internal map to store key-value pairs
+  Map<String,Ipx> ipxes = {};
+  // Getter for keys
+  get keys => ipxes.keys;
+  // Operator [] for reading values
+  Ipx? operator[](String key)
+  {
+    return ipxes[key];
+  }
+  // Operator []= for assigning values
+  void operator []=(String key, Ipx value) {
+    ipxes[key] = value;
+  }
+  // Method for checking if key exists
+  bool containsKey(String? arg)
+  {
+    return ipxes.containsKey(arg);
+  }
+  // Method for finding an entity by searching through the values of the map
+  // Returns the found entity or null if not found
+  IpxEntity? find(String message)
+  {
+    IpxEntity? res ;
+    // Loop through each configured command in the map
+    for(String key in ipxes.keys)
+      {
+        res = ipxes[key]?.getEntity(message);
+        if(res != null) return res;
+      }
+    // Loop through each entity in the map
+    for(String key in ipxes.keys)
+    {
+      res = ipxes[key]?.findEntity(message);
+      if(res != null) return res;
+    }
+    //nothing found
+    return null;
   }
 }

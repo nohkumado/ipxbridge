@@ -8,6 +8,12 @@ enum ipxtypes {input, output,analog,counter}
 enum switchtypes {button, toggle, onoff}
 abstract class IpxEntity<T>
 {
+  String cmd = "";
+
+  String help = '';
+  String get valueString => value.toString();
+  String get cmdString => cmd.isEmpty ? '' : ' $cmd';
+
   ipxtypes get type;
    /// The name of the entity.
   final String name;
@@ -17,7 +23,14 @@ abstract class IpxEntity<T>
   late T value;
   bool changed = false;
 /// Constructor for the IpxEntity class.
-  IpxEntity({required this.name, required this.n});
+  IpxEntity({required this.name, required this.n, String cmd = '', String help = ''}) {
+    if(cmd.isNotEmpty) {
+      this.cmd = cmd;
+      if(help.isNotEmpty) this.help = help;
+      else
+        this.help = cmd;
+    }
+}
 
   bool update(String value);
   @override
@@ -51,7 +64,7 @@ class IpxOutput extends IpxEntity<bool>
   @override
   bool value = false;
   late switchtypes behavior;
-  IpxOutput({required String name, required int n, switchtypes type = switchtypes.onoff }) : super(name: name, n: n) {
+  IpxOutput({required String name, required int n, switchtypes type = switchtypes.onoff, String cmd =''}) : super(name: name, n: n, cmd: cmd) {
     behavior = type;
   }
   @override
