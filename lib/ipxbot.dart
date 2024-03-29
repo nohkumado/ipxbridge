@@ -37,6 +37,8 @@ class IpxMatrixBridge
 
   IpxMap ipxes = IpxMap();
 
+  String greetMsg = 'Hello Wrold!';
+
   IpxMatrixBridge({this.userid = "", this.username = "", this.txnId = 1, this.rid = '', this.allowedusers = const ['@bboett:matrix.org', '@bboett:nohkumado.eu','@sophie_boettcher:matrix.org','@nathan_boettcher:matrix.org', '@boettcher_manuela:matrix.org','@arthur_boettcher:matrix.org', '@wibo:matrix.org'], this.m2mport = 9870, this.m2mhost= 'tcp://domus.lan/'} ) {
     //to be later exported to a json encoded file.... TODO!
     ipxes['domus'] =Ipx('domus', port: 9870, host: 'domus.lan')
@@ -74,18 +76,17 @@ class IpxMatrixBridge
     //client.onRoomUpdate.stream.listen((RoomUpdate eventUpdate){
     //    print("New room update!");
     //});
-    //client.checkHomeserver(Uri.parse(server)).then(
-    //        (value) => client.login(
-    //      LoginType.mLoginPassword,
-    //      identifier: AuthenticationUserIdentifier(user: user),
-    //      password: passwd,
-    //    ).then((value) {
-    //      myRoom = client.getRoomById(roomid);
-    //      //if(myRoom != null) await myRoom!.sendTextEvent('Hello world');
-    //      post2Room('Hello world');
-    //    }
+    client.checkHomeserver(Uri.parse(server)).then(
+            (value) => client.login(
+          LoginType.mLoginPassword,
+          identifier: AuthenticationUserIdentifier(user: user),
+          password: passwd,
+        ).then((value) {
+          myRoom = client.getRoomById(roomid);
+          post2Room(greetMsg);
+        }
 
-    //    ));
+        ));
     //Start http server
     var http_server = await HttpServer.bind(InternetAddress.anyIPv4, 8123);
 
@@ -257,10 +258,15 @@ class IpxMatrixBridge
   {
     StringBuffer res = StringBuffer();
     for(String key in ipxes.keys)
-      {
-        res.write('${ipxes[key]!.compileHelp()}');
-      }
+    {
+      res.write('${ipxes[key]!.compileHelp()}');
+    }
     return res.toString();
 
+  }
+
+  greeting(String? altGreet)
+  {
+    greetMsg = altGreet??greetMsg;
   }
 }
