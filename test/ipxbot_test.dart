@@ -16,12 +16,13 @@ void main() {
     'roomid': '!OXOtvaYQZByMfTUVsg:matrix.org'
   };
     var  bridge = IpxMatrixBridge();
-  test('calculate', ()
+  test('matrix test', ()
   {
     String roomid =results['roomid']??'';
-    print("connecting to server ${results["server"]}");
-    bridge.connect(results['server']??'https://matrix.org',user : results['user']??'toto', passwd : results['passwd']??'12345',roomid : results['room']??'botroom' );
-    print("logging in with  ${results["user"]} and ${results["passwd"]}");
+    //print("connecting to server ${results["server"]}");
+    //bridge.connect(results['server']??'https://matrix.org',user : results['user']??'toto', passwd : results['passwd']??'12345',roomid : results['room']??'botroom' );
+    //print("logging in with  ${results["user"]} and ${results["passwd"]}");
+
     //if(roomid.isEmpty) {
     //  print(
     //      "trying to create room= ${results["room"]} and inviting ${results["invite"]}");
@@ -180,21 +181,58 @@ void main() {
           final ipxMap = IpxMap();
           final ipx1 = Ipx("one");
           final ipx2 = Ipx("two");
-          final message1 = 'message1';
-          final message2 = 'message2';
+          final message1 = 'Test Input';
+          final message2 = 'Test Output';
 
           // Add entities to Ipx objects
-          ipx1.define(IpxInput(name: 'Test Input', n: 0));
-          ipx2.define(IpxOutput(name: 'Test Output', n: 1));
+          ipx1.define(IpxInput(name: message1, n: 0));
+          ipx2.define(IpxOutput(name: message2, n: 1,cmd: 'toto'));
 
           // Add Ipx objects to the map
           ipxMap['key1'] = ipx1;
           ipxMap['key2'] = ipx2;
+          expect(ipxMap.find(message1), isNotNull);
+          expect(ipxMap.find(message2), isNotNull);
+          expect(ipx1.findEntity(message1), isNotNull);
+          expect(ipx2.findEntity(message2), isNotNull);
+          expect(ipx2.getEntity('toto'), isNotNull);
 
           // Find entities by message
-          expect(ipxMap.find(message1), equals(ipx1.getEntity(message1)));
-          expect(ipxMap.find(message2), equals(ipx2.getEntity(message2)));
+          expect(ipxMap.find(message1), equals(ipx1.findEntity(message1)));
+          expect(ipxMap.find(message2), equals(ipx2.findEntity(message2)));
+          expect(ipxMap.find(message2), equals(ipx2.getEntity('toto')));
         });
+
+        test('should find entities correctly', () {
+          final ipxMap = IpxMap();
+          final ipx1 = Ipx("one");
+          final ipx2 = Ipx("two");
+          final message1 = 'Test Input';
+          final message2 = 'Test Output';
+          // Add Ipx objects to the map
+          ipxMap['key1'] = ipx1;
+          ipxMap['key2'] = ipx2;
+
+          // Add entities to Ipx objects
+          ipx1.define(IpxInput(name: message1, n: 0));
+          ipx2.define(IpxOutput(name: message2, n: 1,cmd: 'toto'));
+
+          String json = ipxMap.toJson();
+          IpxMap recov = IpxMap.fromJson(json);
+
+          expect(recov.find(message1), isNotNull);
+          expect(recov.find(message2), isNotNull);
+          expect(ipx1.findEntity(message1), isNotNull);
+          expect(ipx2.findEntity(message2), isNotNull);
+          expect(ipx2.getEntity('toto'), isNotNull);
+
+          // Find entities by message
+          expect(recov.find(message1), equals(ipx1.findEntity(message1)));
+          expect(recov.find(message2), equals(ipx2.findEntity(message2)));
+          expect(recov.find(message2), equals(ipx2.getEntity('toto')));
+        });
+
+
       });
 
     });

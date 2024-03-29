@@ -1,3 +1,4 @@
+import 'dart:collection';
 /// Abstract base class representing an IPX entity.
 ///
 /// This class provides common properties for different types of IPX entities
@@ -76,6 +77,20 @@ abstract class IpxEntity<T>
       orElse: () => switchtypes.onoff, // Default value or error handling
     );
   }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! IpxEntity<T>) return false;
+    return other.name == name &&
+        other.cmd == cmd &&
+        other.n == n &&
+        other.value == value &&
+        other.help == help
+    ;
+  }
+
+  @override
+  int get hashCode => Object.hash(name, cmd, n, value,help);
 
 }
 
@@ -140,6 +155,18 @@ class IpxOutput extends IpxEntity<bool>
     prev['switch'] = behavior.toString().split('.').last;
     return prev;
   }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true; // Check for same instance
+    if (other is! IpxOutput) return false;   // Check for type compatibility
+
+    return super == other &&  // Use super for inherited property comparison
+        other.behavior == behavior;  // Compare additional property 'behavior'
+  }
+
+
+  @override
+  int get hashCode => Object.hash(name, cmd, n, value,help,behavior);
 }
 /// Class representing an IPX analog entity
 class IpxAnalog extends IpxEntity<double>

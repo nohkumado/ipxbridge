@@ -126,11 +126,14 @@ class Ipx
 
   IpxEntity? findEntity(String cmd)
   {
+    IpxEntity? result = getEntity(cmd);
+    if(result != null) return result;
     for(String key in entities.keys)
     {
       int indexof = 0;
       while(indexof < entities[key]!.length)
       {
+        //the second test shouldn't be usefule now, since we checked before if it is a cmd?... TODO
         if(entities[key]![indexof].name == cmd ||entities[key]![indexof].cmd == cmd) return entities[key]![indexof];
         indexof++;
       }
@@ -196,15 +199,9 @@ class IpxMap
     // Loop through each configured command in the map
     for(String key in ipxes.keys)
       {
-        res = ipxes[key]?.getEntity(message);
+        res = ipxes[key]?.findEntity(message);
         if(res != null) return res;
       }
-    // Loop through each entity in the map
-    for(String key in ipxes.keys)
-    {
-      res = ipxes[key]?.findEntity(message);
-      if(res != null) return res;
-    }
     //nothing found
     return null;
   }
@@ -218,11 +215,12 @@ class IpxMap
   }
 
   // Method to deserialize the IpxMap from a JSON string
-  void fromJson(String jsonStr) {
+  static IpxMap fromJson(String jsonStr) {
     Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
-    ipxes.clear(); // Clear the existing map
+    IpxMap ipxes = IpxMap(); // Clear the existing map
     jsonMap.forEach((key, value) {
       ipxes[key] = Ipx.fromJson(value);
     });
+    return ipxes;
   }
 }
