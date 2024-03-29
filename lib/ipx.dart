@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'ipxentity.dart';
 import 'package:tuple/tuple.dart';
 /// description of an Ipx, the home automation system
@@ -10,6 +11,7 @@ class Ipx
   int port; //the m2m port of this ipx, to see later if we use it at all
   String host; //the hostname of this ipx
   Map<String,IpxEntity> cmds = {};
+  bool debug = true;
 
   Map<String,List<IpxEntity>> entities =
   {
@@ -20,7 +22,6 @@ class Ipx
   };
 
 
-  bool debug = true;
 
 
 
@@ -130,11 +131,40 @@ class Ipx
       int indexof = 0;
       while(indexof < entities[key]!.length)
       {
-        if(entities[key]![indexof].name == cmd) return entities[key]![indexof];
+        if(entities[key]![indexof].name == cmd ||entities[key]![indexof].cmd == cmd) return entities[key]![indexof];
         indexof++;
       }
     }
     return null;
+  }
+
+  Map<String, dynamic>  toJson() {
+    return {
+      'name': name,
+      'port': port,
+      'host': host,
+      //'cmds': cmds.map((key, value) => MapEntry(key, value.toJson())),
+      'entities': entities.map((key, value) => MapEntry(key, value.map((entity) => entity.toJson()).toList())),
+    };
+  }
+
+  // Method to deserialize the Ipx object from a JSON Map
+  factory Ipx.fromJson(Map<String, dynamic> json) {
+    var ipx = Ipx(json['name'], port: json['port'], host:json['host']);
+    /*json['cmds'].forEach((key, value) {
+      ipx.cmds[key] = IpxEntity.fromJson(value);
+    }); */
+    // Deserialize entities map
+    json['entities'].forEach((key, value) {
+      ipx.entities[key] = (value as List<dynamic>).map((entityJson) {
+        IpxEntity entity = IpxEntity.fromJson(entityJson);
+        if(entity.cmd.isNotEmpty) {
+          ipx.cmds[entity.cmd] = entity;
+        }
+        return entity;
+      }).toList();
+    });
+    return ipx;
   }
 }
 
@@ -177,5 +207,22 @@ class IpxMap
     }
     //nothing found
     return null;
+  }
+  // Method to serialize the IpxMap to a JSON string
+  String toJson() {
+    Map<String, dynamic> jsonMap = {};
+    ipxes.forEach((key, ipx) {
+      jsonMap[key] = ipx.toJson();
+    });
+    return jsonEncode(jsonMap);
+  }
+
+  // Method to deserialize the IpxMap from a JSON string
+  void fromJson(String jsonStr) {
+    Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
+    ipxes.clear(); // Clear the existing map
+    jsonMap.forEach((key, value) {
+      ipxes[key] = Ipx.fromJson(value);
+    });
   }
 }

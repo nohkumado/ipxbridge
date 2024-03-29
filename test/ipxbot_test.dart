@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ipxbot/ipx.dart';
 import 'package:ipxbot/ipxbot.dart';
 import 'package:ipxbot/ipxentity.dart';
@@ -69,6 +71,15 @@ void main() {
         expect(counter.name, 'Counter C');
         expect(counter.n, 15);
       });
+      test('IpxEntity json test', () {
+        final toggleOutput = IpxOutput(name: 'Toggle B', n: 8, type: switchtypes.toggle);
+        String encoded = jsonEncode(toggleOutput.toJson());
+        String expected = '{"name":"Toggle B","cmd":"","n":8,"value":false,"changed":false,"type":"output","switch":"toggle"}';
+        expect(encoded,expected);
+        final IpxOutput recovered = IpxEntity.fromJson(jsonDecode(encoded)) as IpxOutput;
+        expect(recovered.name, 'Toggle B');
+        expect(recovered.behavior, switchtypes.toggle);
+      });
     });
     group('Ipx class', () {
       // Initialize an Ipx object for testing
@@ -80,8 +91,25 @@ void main() {
         ipx.define(output);
         expect(ipx.entities['input']![0], input);
         expect(ipx.entities['output']![1], output);
-      });
 
+      });
+      test('Ipx json test', () {
+        final IpxInput input = IpxInput(name: 'Test Input', n: 0);
+        final IpxOutput output = IpxOutput(name: 'Test Output', n: 1, cmd: 'toto');
+        ipx.define(input);
+        ipx.define(output);
+        String encoded = jsonEncode(ipx.toJson());
+        String expected = '{"name":"Test Ipx","port":9870,"host":"ipx.lan","entities":{"input":[{"name":"Test Input","cmd":"","n":0,"value":false,"changed":false,"type":"input"},{"name":"2","cmd":"","n":1,"value":false,"changed":false,"type":"input"},{"name":"3","cmd":"","n":2,"value":false,"changed":false,"type":"input"},{"name":"4","cmd":"","n":3,"value":false,"changed":false,"type":"input"},{"name":"5","cmd":"","n":4,"value":false,"changed":false,"type":"input"},{"name":"6","cmd":"","n":5,"value":false,"changed":false,"type":"input"},{"name":"7","cmd":"","n":6,"value":false,"changed":false,"type":"input"},{"name":"8","cmd":"","n":7,"value":false,"changed":false,"type":"input"},{"name":"9","cmd":"","n":8,"value":false,"changed":false,"type":"input"},{"name":"10","cmd":"","n":9,"value":false,"changed":false,"type":"input"},{"name":"11","cmd":"","n":10,"value":false,"changed":false,"type":"input"},{"name":"12","cmd":"","n":11,"value":false,"changed":false,"type":"input"},{"name":"13","cmd":"","n":12,"value":false,"changed":false,"type":"input"},{"name":"14","cmd":"","n":13,"value":false,"changed":false,"type":"input"},{"name":"15","cmd":"","n":14,"value":false,"changed":false,"type":"input"},{"name":"16","cmd":"","n":15,"value":false,"changed":false,"type":"input"},{"name":"17","cmd":"","n":16,"value":false,"changed":false,"type":"input"},{"name":"18","cmd":"","n":17,"value":false,"changed":false,"type":"input"},{"name":"19","cmd":"","n":18,"value":false,"changed":false,"type":"input"},{"name":"20","cmd":"","n":19,"value":false,"changed":false,"type":"input"},{"name":"21","cmd":"","n":20,"value":false,"changed":false,"type":"input"},{"name":"22","cmd":"","n":21,"value":false,"changed":false,"type":"input"},{"name":"23","cmd":"","n":22,"value":false,"changed":false,"type":"input"},{"name":"24","cmd":"","n":23,"value":false,"changed":false,"type":"input"},{"name":"25","cmd":"","n":24,"value":false,"changed":false,"type":"input"},{"name":"26","cmd":"","n":25,"value":false,"changed":false,"type":"input"},{"name":"27","cmd":"","n":26,"value":false,"changed":false,"type":"input"},{"name":"28","cmd":"","n":27,"value":false,"changed":false,"type":"input"},{"name":"29","cmd":"","n":28,"value":false,"changed":false,"type":"input"},{"name":"30","cmd":"","n":29,"value":false,"changed":false,"type":"input"},{"name":"31","cmd":"","n":30,"value":false,"changed":false,"type":"input"},{"name":"32","cmd":"","n":31,"value":false,"changed":false,"type":"input"}],"output":[{"name":"1","cmd":"","n":0,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"Test Output","cmd":"toto","n":1,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"3","cmd":"","n":2,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"4","cmd":"","n":3,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"5","cmd":"","n":4,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"6","cmd":"","n":5,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"7","cmd":"","n":6,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"8","cmd":"","n":7,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"9","cmd":"","n":8,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"10","cmd":"","n":9,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"11","cmd":"","n":10,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"12","cmd":"","n":11,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"13","cmd":"","n":12,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"14","cmd":"","n":13,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"15","cmd":"","n":14,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"16","cmd":"","n":15,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"17","cmd":"","n":16,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"18","cmd":"","n":17,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"19","cmd":"","n":18,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"20","cmd":"","n":19,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"21","cmd":"","n":20,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"22","cmd":"","n":21,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"23","cmd":"","n":22,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"24","cmd":"","n":23,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"25","cmd":"","n":24,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"26","cmd":"","n":25,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"27","cmd":"","n":26,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"28","cmd":"","n":27,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"29","cmd":"","n":28,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"30","cmd":"","n":29,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"31","cmd":"","n":30,"value":false,"changed":false,"type":"output","switch":"onoff"},{"name":"32","cmd":"","n":31,"value":false,"changed":false,"type":"output","switch":"onoff"}],"analog":[{"name":"1","cmd":"","n":0,"value":0.0,"changed":false,"type":"analog"},{"name":"2","cmd":"","n":1,"value":0.0,"changed":false,"type":"analog"},{"name":"3","cmd":"","n":2,"value":0.0,"changed":false,"type":"analog"},{"name":"4","cmd":"","n":3,"value":0.0,"changed":false,"type":"analog"},{"name":"5","cmd":"","n":4,"value":0.0,"changed":false,"type":"analog"},{"name":"6","cmd":"","n":5,"value":0.0,"changed":false,"type":"analog"},{"name":"7","cmd":"","n":6,"value":0.0,"changed":false,"type":"analog"},{"name":"8","cmd":"","n":7,"value":0.0,"changed":false,"type":"analog"},{"name":"9","cmd":"","n":8,"value":0.0,"changed":false,"type":"analog"},{"name":"10","cmd":"","n":9,"value":0.0,"changed":false,"type":"analog"},{"name":"11","cmd":"","n":10,"value":0.0,"changed":false,"type":"analog"},{"name":"12","cmd":"","n":11,"value":0.0,"changed":false,"type":"analog"},{"name":"13","cmd":"","n":12,"value":0.0,"changed":false,"type":"analog"},{"name":"14","cmd":"","n":13,"value":0.0,"changed":false,"type":"analog"},{"name":"15","cmd":"","n":14,"value":0.0,"changed":false,"type":"analog"},{"name":"16","cmd":"","n":15,"value":0.0,"changed":false,"type":"analog"}],"counter":[{"name":"1","cmd":"","n":0,"value":0,"changed":false,"type":"counter"},{"name":"2","cmd":"","n":1,"value":0,"changed":false,"type":"counter"},{"name":"3","cmd":"","n":2,"value":0,"changed":false,"type":"counter"},{"name":"4","cmd":"","n":3,"value":0,"changed":false,"type":"counter"},{"name":"5","cmd":"","n":4,"value":0,"changed":false,"type":"counter"},{"name":"6","cmd":"","n":5,"value":0,"changed":false,"type":"counter"},{"name":"7","cmd":"","n":6,"value":0,"changed":false,"type":"counter"},{"name":"8","cmd":"","n":7,"value":0,"changed":false,"type":"counter"}]}}';
+        expect(encoded,expected);
+        final Ipx recovered = Ipx.fromJson(jsonDecode(encoded));
+        expect(recovered.name, 'Test Ipx');
+        IpxEntity? entity = recovered.getEntity('toto');
+        expect(entity,isNotNull);
+        expect(entity!.cmd,'toto');
+        entity = recovered.findEntity('toto');
+        expect(entity,isNotNull);
+        expect(entity!.cmd,'toto');
+      });
       test('statusChange method should update the state of outputs and inputs', () {
         // Define some inputs and outputs for testing
         final IpxInput input = IpxInput(name: 'Test Input', n: 0);
