@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:matrix/matrix.dart';
-import 'package:tuple/tuple.dart';
-
 import 'ipx.dart';
 import 'package:http/http.dart' as http;
 
+import 'ipx_chatbot.dart';
 import 'ipxentity.dart';
+import 'req_res.dart';
 
 class IpxMatrixBridge
 {
@@ -35,9 +35,17 @@ class IpxMatrixBridge
 
   final DateTime activationDate = DateTime.now() ;
 
-  IpxMap ipxes = IpxMap();
+  IpxMap ipxes = IpxMap(map:{});
 
-  String greetMsg = 'Hello Wrold!';
+  String greetMsg = 'Hello World!';
+
+  String configRep = "./";
+  late final IpxChatbot chatter;
+
+  List<IpxEntity> lastChanges = [];
+  DateTime lastEvent = DateTime.now() ;
+
+  int changeTmout = 5;//in seconds
 
   IpxMatrixBridge({this.userid = "", this.username = "", this.txnId = 1, this.rid = '', this.allowedusers = const ['@bboett:matrix.org', '@bboett:nohkumado.eu','@sophie_boettcher:matrix.org','@nathan_boettcher:matrix.org', '@boettcher_manuela:matrix.org','@arthur_boettcher:matrix.org', '@wibo:matrix.org'], this.m2mport = 9870, this.m2mhost= 'tcp://domus.lan/'} ) {
     //to be later exported to a json encoded file.... TODO!
@@ -51,6 +59,7 @@ class IpxMatrixBridge
       ..define(IpxOutput(n:4,name:'actionneur sonnette privee'))
       ..define(IpxOutput(n:5,name:'vidange reservoir', cmd: 'vidange'))
       ..define(IpxOutput(n:6,name:'porte garage', type: switchtypes.button, cmd: 'garage'));
+    chatter = IpxChatbot(ipx: ipxes, botName: username);
   }
 
 
@@ -66,11 +75,20 @@ class IpxMatrixBridge
     client.onEvent.stream.listen((EventUpdate r_event){
       //print("incoming event of type: '${r_event.type}' ${r_event.type.runtimeType}");
       if(r_event.type == EventUpdateType.timeline && r_event.content['type'] == "m.room.message") processMsg(r_event.content);
-      //else print('New event update! t:${r_event.type} c:${r_event.content}');
+      else if(r_event.type == EventUpdateType.inviteState) processInvite(r_event);
+      else print('New event update! t:${r_event.type} c:${r_event.content}');
     });
     client.onRoomState.stream.listen((Event eventUpdate)
     {
       //print("Room state change: ${eventUpdate.type} ${eventUpdate.content}");
+      //Room state change: m.room.member {is_direct: true, membership: invite, displayname: chaletbot}
+      if(eventUpdate.type == 'm.room.member' &&
+          eventUpdate.content['is_direct'] =='true' &&
+          eventUpdate.content['membership'] == 'invite' &&
+          eventUpdate.content['displayname'] == username)
+      {
+        processDirectInvite(eventUpdate);
+      }
     });
 
     //client.onRoomUpdate.stream.listen((RoomUpdate eventUpdate){
@@ -102,38 +120,59 @@ class IpxMatrixBridge
     }
   }
 
-  Future<void> post2Room(String s) async {
-    if(myRoom != null) await myRoom!.sendTextEvent(s);
-    else print("No room :( : $s");
+  Future<void> post2Room(String s, {String type = 'text'}) async {
+    if(myRoom != null) {
+      if(type == 'emote') await myRoom!.sendTextEvent(s, msgtype: 'm.emote');
+      else await myRoom!.sendTextEvent(s);
+    } else print("No room :( : $s");
   }
 
-  void processMsg(Map<String, dynamic> content)
-  {
+  Future<void> processMsg(Map<String, dynamic> content)
+  async {
     String sender = content['sender'];
     String message = content['content']['body'];
-    print("debug: ${content['unsigned']}");
+    String msgType = content['content']['msgtype'];
     //int tmstamp = content['unsigned']?['age']??0;
     int tmstamp = content['origin_server_ts']??0;
     DateTime msgDate = DateTime.fromMillisecondsSinceEpoch(tmstamp);
     if(msgDate.isBefore(activationDate)) return; //forget old messages
-    print('Need to process msg: ${content}');
+
     if(allowedusers.contains(sender))
     {
+      // Create a mutable copy of the query parameters
+      print('PM:Need to process msg: ${content}');
+      ReqRes res = await chatter.handleMessage(sender, message, type: msgType);
+     if(res.status) {
+       print("PM... chatty returned something ${res.msg}");
+       post2Room("${res.msg}", type: res.type);
+       return;
+     }
+      print("PM... no luck with chatty going legacy");
       //print("##### processing $message");
-      IpxEntity? entity = ipxes.find(message);
+      //check if a configured command applies
+      //Tuple2<Ipx,IpxEntity>? res = ipxes.find(message);
+      //if(res != null)
+      //{
+      //  String mesg = await res.item1.schalte( sender: sender, schalter:res.item2 );
+      //  if(mesg.isNotEmpty) post2Room(mesg);
+      //  return;
+      //}
+      //if(pG.item2 >=0)
       switch(message)
       {
         case 'hello': post2Room("hello ${sender}"); break;
         case '?':
-        case 'help': post2Room("help: ${compileIpxCmds()}}"); break;
+        case 'help': post2Room("help: ${ipxes.compileIpxCmds()}}"); break;
         case 'garage':
+          print("PM... found garage");
           triggerOutput(sender: sender, schalter: 'porte garage');
           break;
         case 'aspi':
+          print("PM... found aspi");
           post2Room("Hai ${sender}! starte Staubsauger!");
           toggleOutput(sender: sender, schalter:'aspirateur');
           break;
-        default: print('Need to process msg: ${message} from ${sender}');
+        default: print('DC:Need to process msg: ${message} from ${sender}');
       }
     }
     else if(sender.startsWith("@$username:") ){}//ignore it
@@ -150,10 +189,37 @@ class IpxMatrixBridge
       {
         // Assuming the notification data is passed as query parameters
         //print('Received[GET] push notification: $args');
-        if(ipxes.containsKey(args["id"])) {
+        if(ipxes.containsKey(args["id"]??"")) {
+          DateTime msgDate = DateTime.now();
+          if(msgDate.isAfter(lastEvent.add(Duration(seconds: changeTmout)))) lastChanges.clear(); //forget old messages
+
           Ipx actIpx = ipxes[args["id"]!]!;
-          List<String> changes = actIpx.statusChange(args);
-          post2Room("Status changes received: $changes");
+          List<IpxEntity> changes = actIpx.statusChange(args);
+
+          if(changes.isNotEmpty)
+          {
+            StringBuffer result = StringBuffer();
+            if(lastChanges.isNotEmpty)
+            {
+              for(IpxEntity e in changes) {
+                if(!lastChanges.contains(e)) {
+                  result.write(e.name + " ");
+                }
+              }
+            }
+            else
+            {
+              for(IpxEntity e in changes) {
+                result.write(e.name + ",");
+              }
+            }
+            lastChanges = changes;
+            if(result.isNotEmpty)
+            {
+              post2Room("Status changes: $result");
+
+            }
+          }
         }  else
           print("ehm... unknown ipx: '${args['id']}'");
       }else
@@ -199,11 +265,11 @@ class IpxMatrixBridge
     post2Room("Hai ${sender}! betätige Schalter $schalter!");
     final Ipx actIps = ipxes["domus"]!;
     Uri url=Uri(scheme: 'http', host: actIps.host, path: 'leds.cgi');
-    Tuple2<String,int> pG = actIps.find(schalter);
-    if(pG.item2 >=0) {
+    IpxEntity? pG = actIps.find(schalter);
+    if(pG != null) {
       // Create a mutable copy of the query parameters map
       Map<String, String> queryParameters = Map.from(url.queryParameters);
-      queryParameters['led'] = pG.item2.toString();
+      queryParameters['led'] = pG.n.toString();
 
       // Assign the modified query parameters back to the url
       url = url.replace(queryParameters: queryParameters);
@@ -221,7 +287,7 @@ class IpxMatrixBridge
     else print("no such entry: '$schalter'");
 
   }
-  /// open our garage
+ /// open our garage
   /// 'aspirateur'
   Future<void> toggleOutput({required String sender, required String schalter})
   async {
@@ -231,10 +297,10 @@ class IpxMatrixBridge
     //that ons is to set the type of switch
     //final Uri url=Uri(scheme: 'http', host: actIps.host, path: 'protect/assignio/assign1.htm');
     final Uri url=Uri(scheme: 'http', host: actIps.host, path: 'preset.htm');
-    Tuple2<String,int> pG = actIps.find('aspirateur');
-    if(pG.item2 >=0) {
+    IpxEntity? pG = actIps.find(schalter);
+    if(pG != null) {
 
-      url.queryParameters['set${(pG.item2+1)}'] = (!actIps.getState(pG.item1,pG.item2)).toString();
+      url.queryParameters['set${(pG.n+1)}'] = (!actIps.getState(entity:pG)).toString();
       //keep for further reference API info:
       //url.queryParameters('relayname', 'porte garage');
       // Set delay parameters (assuming these are supported by the API)
@@ -245,28 +311,94 @@ class IpxMatrixBridge
       final response = await http.get(url); // Use http.get for GET requests
 
       if (response.statusCode == 200) {
-        post2Room("Garage door toggle request sent successfully."); // Indicate success
+        post2Room("'$schalter' toggle request sent successfully."); // Indicate success
       } else {
-        post2Room("Error sending garage door toggle request: ${response.statusCode}");
+        post2Room("Error sending toggle '$schalter' request: ${response.statusCode}");
       }
     }
-    else post2Room("no such entry: 'porte garage'");
+    else post2Room("no such entry: '$schalter'");
 
   }
 
-  String compileIpxCmds()
-  {
-    StringBuffer res = StringBuffer();
-    for(String key in ipxes.keys)
-    {
-      res.write('${ipxes[key]!.compileHelp()}');
-    }
-    return res.toString();
-
-  }
 
   greeting(String? altGreet)
   {
     greetMsg = altGreet??greetMsg;
   }
+
+  configDir(String? altConf)
+  {
+    configRep = altConf??configRep;
+  }
+
+  void loadConfig() {
+    final configFile = File('$configRep/config.json');
+
+    // Check if the file exists
+    if (configFile.existsSync()) {
+      try {
+        final config = configFile.readAsStringSync();
+        ipxes = IpxMap.fromJson(config);
+      } catch (e) {
+        stderr.writeln('[Ipxbot] Error parsing config file: $e');
+        // Handle parsing errors (optional: consider default values or exit)
+      }
+    } else {
+      stderr.writeln('[Ipxbot] Config file not found: ${configFile.path} continuing with defaults');
+      //stderr.writeln('[Ipxbot] writing one with default');
+      // Handle missing file (optional: create a default config, exit)
+    }
+  }
+  void saveConfig() {
+    // Ensure trailing path separator
+    if (!configRep.endsWith(Platform.pathSeparator)) {
+      configRep += Platform.pathSeparator;
+    }
+    if(configRep.startsWith('~')) configRep = '${Platform.environment['HOME']}${configRep.substring(1)}';
+
+
+    // Create the directory if it doesn't exist
+    final dir = Directory(configRep);
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true); // Create recursively if needed
+    }
+
+    final configFile = File(configRep + 'config.json');
+    final configJson = ipxes.toJson(); // Convert IpxMap to JSON string, TODO add changeTmout
+
+    try {
+      print("writing $configJson\nto $configFile");
+      configFile.writeAsStringSync(configJson);
+      print('Config file saved successfully to $configFile.'); // Inform success
+    } catch (e) {
+      // Handle file system errors (optional: retry or report)
+      stderr.writeln('Error saving config file: $e');
+    }
+  }
+
+  void processInvite(EventUpdate r_event)
+  {
+    print("Imnvite:: ${r_event.type},${r_event.content},${r_event.roomID}");
+
+    /*
+    EU c:{type: m.room.join_rules, content: {join_rule: invite}, sender: @bboett:nohkumado.eu, state_key: }
+Room state change: m.room.create {room_version: 10, creator: @bboett:nohkumado.eu}
+EU t:EventUpdateType.inviteState c:{type: m.room.create, content: {room_version: 10, creator: @bboett:nohkumado.eu}, sender: @bboett:nohkumado.eu, state_key: }
+Room state change: m.room.encryption {algorithm: m.megolm.v1.aes-sha2}
+EU t:EventUpdateType.inviteState c:{type: m.room.encryption, content: {algorithm: m.megolm.v1.aes-sha2}, sender: @bboett:nohkumado.eu, state_key: }
+Room state change: m.room.member {membership: join, displayname: bboett, avatar_url: mxc://nohkumado.eu/OypILvTTJPelppdPGPEIvhEl}
+EU t:EventUpdateType.inviteState c:{type: m.room.member, content: {membership: join, displayname: bboett, avatar_url: mxc://nohkumado.eu/OypILvTTJPelppdPGPEIvhEl}, sender: @bboett:nohkumado.eu, state_key: @bboett:nohkumado.eu}
+Room state change: m.room.member {is_direct: true, membership: invite, displayname: chaletbot}
+EU t:EventUpdateType.inviteState
+   c:{type: m.room.member, content: {is_direct: true, membership: invite, d
+        isplayname: chaletbot}, sender: @bboett:nohkumado.eu, state_key: @chaletbot:nohkumado.eu}
+*/
+
+  }
+
+  void processDirectInvite(Event eventUpdate)
+  {
+    print("got a direct invite to $eventUpdate ${eventUpdate.type},${eventUpdate.text},${eventUpdate.body},${eventUpdate.infoMap},${eventUpdate.messageType},${eventUpdate.originalSource},${eventUpdate.room},${eventUpdate.parsedForwardedRoomKeyContent}");
+  }
+
 }

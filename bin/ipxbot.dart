@@ -25,7 +25,10 @@ void main(List<String> arguments)
     exit(1);
   }
 
-  var  bridge = IpxMatrixBridge()..greeting(results['msg']);
+  var  bridge = IpxMatrixBridge()..greeting(results['msg'])
+                                 ..configDir(results['config'])
+    ..saveConfig()
+    ..loadConfig();
   //IpxBot bot = new IpxBot(results);
   print('Start of prog!');
   doWork(bridge, results);

@@ -121,17 +121,17 @@ void main() {
 
         // Call the statusChange method with sample data
         final Map<String, String> args = {'out': '11', 'in': '00'};
-        final List<String> changed = ipx.statusChange(args);
+        final List<IpxEntity> changed = ipx.statusChange(args);
 
         // Check that the state of the output was updated
-        expect(ipx.getState('output', 1), true);
+        expect(ipx.getState(genre: 'output',  index:1), true);
         // Check that the list of changed entities includes the output
-        expect(changed, contains('Test Output'));
+        expect(changed, contains(input));
 
         // Check that the state of the input was not updated
-        expect(ipx.getState('input', 0), false);
+        expect(ipx.getState(genre:'input', index:0), false);
 
-        expect(changed, isNot(contains('Test Input')));
+        expect(changed, isNot(contains(input)));
       });
       test('find method should return the key and index of the entity', () {
         // Define some entities for testing
