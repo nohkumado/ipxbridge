@@ -1,8 +1,13 @@
-a try for a little bot handling the incoming stuff of an ipx home automation system
+# IPX - Matrix bridge
+
+a try for a bridge handling on one side, the incoming stuff of an ipx home automation system and informing a matrix channel, and on the other side, accept commands on that channel to pilto the ipx.
 
 
 run from bin/ipxbot.dart either in android studio or from command line with dart run
 needs commmand line arguments (either edit studio configuration or on cmd line)
 
 like 
--u mybot -p use_a_good_passwd -r #botsroom:matrix.org -c @myself:matrix.org 
+
+```
+dart run bin/ipxbot -u mybot -p use\_a\_good\_passwd -r #botsroom:matrix.org -i !gWOtdaUZZByMfTOVam:matrix.org -s "https://matrix.org" -m "Je suis là" -c ~/config/ipxbot/
+```
