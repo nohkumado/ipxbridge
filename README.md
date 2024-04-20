@@ -1,10 +1,12 @@
 # IPX - Matrix bridge
 
-a try for a bridge handling on one side, the incoming stuff of an ipx home automation system and informing a matrix channel, and on the other side, accept commands on that channel to pilto the ipx.
+a try for a bridge handling on one side, the incoming stuff of an ipx home automation system 
+and informing a matrix channel, and on the other side, 
+accept commands on that channel to pass to the ipx.
 
 
 run from bin/ipxbot.dart either in android studio or from command line with dart run
-needs commmand line arguments (either edit studio configuration or on cmd line)
+needs command line arguments (either edit studio configuration or on cmd line)
 
 like 
 

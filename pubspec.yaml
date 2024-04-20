@@ -7,11 +7,14 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 dependencies:
   args: ^2.4.2
+  flutter_olm: ^1.4.1
+  flutter_openssl_crypto: ^0.3.0
   http: ^0.13.6
-  matrix:
-     git:
-       url: https://gitlab.com/famedly/company/frontend/famedlysdk.git
-       ref: main
+  matrix: ^0.22.4
+    #git: 
+       #url: https://gitlab.com/famedly/company/frontend/famedlysdk.git
+       #ref: main
+  olm: ^2.0.3
   tuple: ^2.0.2
          #    matrix_api_lite: ^-1.1.9
          #  path: ^1.7.0

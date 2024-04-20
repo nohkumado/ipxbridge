@@ -161,14 +161,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
-  charcode:
+  characters:
     dependency: transitive
     description:
-      name: charcode
-      sha256: fb98c0f6d12c920a02ee2d998da788bca066ca5f148492b7085ee23372b12306
+      name: characters
+      sha256: "04a925763edad70e8443c99234dc3328f442e811f1d8fd1a72f1c8ad0f69a605"
       url: "https://pub.dev"
     source: hosted
-    version: "1.3.1"
+    version: "1.3.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -265,6 +265,27 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.0"
+  flutter:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_olm:
+    dependency: "direct main"
+    description:
+      name: flutter_olm
+      sha256: f98cafb434b3858d46446a93eb269a8e97eb38ccc5f8e0281b167d66d95c15dc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
+  flutter_openssl_crypto:
+    dependency: "direct main"
+    description:
+      name: flutter_openssl_crypto
+      sha256: "6dcecf6f7c1804ae6f5d73ee05df8af72ea8133bf2447d25979d739503186c96"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   frontend_server_client:
     dependency: transitive
     description:
@@ -389,10 +410,10 @@ packages:
     dependency: transitive
     description:
       name: markdown
-      sha256: "01512006c8429f604eb10f9848717baeaedf99e991d14a50d540d9beff08e5c6"
+      sha256: ef2a1298144e3f985cc736b22e0ccdaf188b5b3970648f2d9dc13efd1d9df051
       url: "https://pub.dev"
     source: hosted
-    version: "4.0.1"
+    version: "7.2.2"
   matcher:
     dependency: transitive
     description:
@@ -401,15 +422,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.12.16+1"
+  material_color_utilities:
+    dependency: transitive
+    description:
+      name: material_color_utilities
+      sha256: "0e0a020085b65b6083975e499759762399b4475f766c21668c4ecca34ea74e5a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.0"
   matrix:
     dependency: "direct main"
     description:
-      path: "."
-      ref: main
-      resolved-ref: "23c6928aa8802542a0418e7328dc1c78a9acc12b"
-      url: "https://gitlab.com/famedly/company/frontend/famedlysdk.git"
-    source: git
-    version: "0.22.0"
+      name: matrix
+      sha256: b01a8a7141a586853a4f9b2e98b3c9912ff74bbceadc16b2bf3630bf055a830a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.22.7"
   matrix_api_lite:
     dependency: transitive
     description:
@@ -422,10 +450,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "7687075e408b093f36e6bbf6c91878cc0d4cd10f409506f7bc996f68220b9136"
+      sha256: d584fa6707a52763a52446f02cc621b077888fb63b93bbcb1143a7be5a0c0c04
       url: "https://pub.dev"
     source: hosted
-    version: "1.12.0"
+    version: "1.11.0"
   mime:
     dependency: transitive
     description:
@@ -443,7 +471,7 @@ packages:
     source: hosted
     version: "2.0.2"
   olm:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: olm
       sha256: "37948a6576949256f3ee1d0063d5b408634ff7e452b9a5c2f6410f9d7ced1c20"
@@ -570,6 +598,11 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.4"
+  sky_engine:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.99"
   slugify:
     dependency: transitive
     description:
@@ -698,6 +731,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.0"
+  vector_math:
+    dependency: transitive
+    description:
+      name: vector_math
+      sha256: "80b3257d1492ce4d091729e3a67a60407d227c27241d6927be0130c98e741803"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.4"
   vm_service:
     dependency: transitive
     description:
@@ -764,3 +805,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.3.0-279.1.beta <3.5.0"
+  flutter: ">=1.20.0"

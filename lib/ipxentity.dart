@@ -1,4 +1,3 @@
-import 'dart:collection';
 /// Abstract base class representing an IPX entity.
 ///
 /// This class provides common properties for different types of IPX entities

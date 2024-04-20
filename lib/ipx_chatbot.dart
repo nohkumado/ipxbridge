@@ -1,3 +1,4 @@
+import 'ipxbot.dart';
 import 'package:tuple/tuple.dart';
 
 import 'ipxentity.dart';
@@ -8,8 +9,9 @@ class IpxChatbot {
   final Map<String, List<String>> _userHistory = {}; // Stores user chat history
   final IpxMap ipx; // Optional Ipx interface for interacting with Ipx
   final String botName;
+  final IpxMatrixBridge bridge; //reference to the bridge itself (for commands like load and save)
 
-  IpxChatbot({required this.ipx, required this.botName});
+  IpxChatbot({required this.ipx, required this.botName, required this.bridge});
 
   // Function to handle a user message
   Future<ReqRes> handleMessage(String sender, String message, {String type = 'm.text'}) async {
@@ -35,7 +37,8 @@ class IpxChatbot {
      {
        case 'hello': response = "hello ${sender}"; break;
        case '?':
-       case 'help': response = "help: ${ipx.compileIpxCmds()}}"; break;
+       case 'help': response = "help: \n  hello: greet user\n  ?|help: issue this help\n  save: save the configuration\n ${ipx.compileIpxCmds()}}"; break;
+       case 'save': bridge.saveConfig(); break;
        default: print('CB:Need to process msg: ${message} from ${sender}');
      }
      if(response.isNotEmpty) return ReqRes( msg: response, status: true );
