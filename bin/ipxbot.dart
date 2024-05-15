@@ -29,31 +29,13 @@ void main(List<String> arguments)
                                  ..configDir(results['config'])
     //..saveConfig()
     ..loadConfig();
-  //IpxBot bot = new IpxBot(results);
   print('Start of prog!');
   doWork(bridge, results);
-  //String data = bot.capas();
-  //print('capas: ${data}!');
 }
  void doWork(IpxMatrixBridge  bridge, ArgResults results )
  async {
    String roomid =(results['roomid'].isNotEmpty)?results['roomid']:'';
    print("connecting to server ${results["server"]}");
-   //await 
        bridge.connect(results['server'],user: results['user'], passwd: results['passwd'],roomid: roomid);
-   print("logging in with  ${results["user"]} and ${results["passwd"]}");
-   //await bridge.login(user: results['user'], passwd: results['passwd']);
-   // if(roomid.isEmpty) {
-   //   print(
-   //       "trying to create room= ${results["room"]} and inviting ${results["invite"]}");
-   //   roomid = await bridge.createRoom(results['room'], invites: results['invite']);
-   // }
-
-   // if(await bridge.joinRoom(roomid))
-   //   {
-   //     //print("login = ${log} ");
-   //     print("trying to send  ${results["msg"]}!");
-   //     await bridge.sendMsg(results['msg']);
-   //   }
  }
 

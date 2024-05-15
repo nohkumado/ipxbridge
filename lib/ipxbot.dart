@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:matrix/encryption.dart';
@@ -70,7 +71,7 @@ class IpxMatrixBridge
 
 
   Future<void>
-  connect(String server,{String user = 'toto', String passwd ='12345',String roomid =''})
+  connect(String server,{String user = 'toto', String passwd ='12345',String roomid ='', String dbdir ='./db', })
   async
   {
     print("entering connect");
@@ -79,13 +80,24 @@ class IpxMatrixBridge
   //final olm2 = OlmDevice;
   //await olm2.init();
     //client = Client('IpxBot', olm2);
-    client = Client('IpxBot');
-    print("client: $client");
-
-    client.encryption = Encryption(client: client);
-    print("++++++++ encryption enabled: ${client.encryption}");
+    final libcrypto =DynamicLibrary.open('libcrypto.so.3');
+    print("crypto lib: $libcrypto");
     await olm.init();
     print("inst olm ${olm.get_library_version()}");
+
+    client = Client('IpxBot',
+        databaseBuilder: (client) async{
+      final Directory dir = Directory(dbdir);
+      final db = HiveCollectionsDatabase("bot_chat", dir.path);
+      await db.open();
+      return db;
+    }
+    );
+    print("client: $client");
+
+    //client.encryption = Encryption(client: client);
+    print("++++++++ encryption enabled: ${client.encryption}");
+
     client.onLoginStateChanged.stream.listen((event) {print('LoginState: $event'); });
 
     client.onEvent.stream.listen((EventUpdate r_event){
@@ -144,6 +156,7 @@ class IpxMatrixBridge
     if(roomid != null && rooms.containsKey(roomid)) {
       print("known room");
       Room aRoom = rooms[roomid]!;
+      if(aRoom.encrypted) print(">>>>>>>>encrypted room!");
       //final session = await client.createOutboundSession(roomId, aRoom.myUserId);
       if (type == 'emote')
         await aRoom.sendTextEvent(s, msgtype: 'm.emote');
@@ -244,6 +257,7 @@ class IpxMatrixBridge
               for(IpxEntity e in changes) {
                 if(!lastChanges.contains(e)) {
                   result.write(e.name + " ");
+                  lastChanges.add(e);
                 }
               }
             }
@@ -251,13 +265,12 @@ class IpxMatrixBridge
             {
               for(IpxEntity e in changes) {
                 result.write(e.name + ",");
+                lastChanges.add(e);
               }
             }
-            lastChanges = changes;
             if(result.isNotEmpty)
             {
-              post2Room("Status changes: $result");
-
+              post2Room("E: $result");
             }
           }
         }  else
@@ -369,6 +382,8 @@ class IpxMatrixBridge
   configDir(String? altConf)
   {
     configRep = altConf??configRep;
+    if(configRep.startsWith('~')) configRep = '${Platform.environment['HOME']}${configRep.substring(1)}';
+    print("set config dir to $configRep");
   }
 
   void loadConfig() {
@@ -428,6 +443,7 @@ class IpxMatrixBridge
           {
             String invitId = r_event.roomID.trim();
             Room? aRoom = client.getRoomById(invitId);
+            //String? potRoomId = client.getDirectChatFromUserId(invitId);
             if (aRoom != null ) {
               await aRoom.join();
               rooms[invitId] = aRoom;
